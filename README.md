@@ -268,6 +268,20 @@ docker exec ai-habit-mongo mongosh \
 
 > The demo user (`demo@local`) is automatically re-created on the next API request.
 
+## Development Progress
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 0 | Project Setup — monorepo, Docker Compose | ✅ Done |
+| 1 | Backend API — NestJS, PostgreSQL, MongoDB | ✅ Done |
+| 1.5 | Demo Client — React image upload + OCR result | ✅ Done |
+| 2 | AI Service — FastAPI + Tesseract OCR | ✅ Done |
+| 3 | LLM Processing — structured data extraction | 🔜 Next |
+| 4 | External Integration — Google Calendar + FCM | ⏳ Pending |
+
+### How to continue with Claude Code
+Just say **"Phase 3 진행해줘"** or **"이어서 해줘"** at the start of the next session.
+
 ## License
 
 Portfolio demonstration purposes only.
