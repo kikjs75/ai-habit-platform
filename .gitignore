@@ -1,6 +1,7 @@
 # Node
 node_modules/
 dist/
+.prisma/
 .env
 .env.local
 .env.*.local
@@ -24,6 +25,9 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Local test files
+shared/
 
 # Secrets
 *.pem

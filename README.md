@@ -1,257 +1,274 @@
 # AI Habit Platform
 
-AI-integrated backend portfolio project demonstrating a modern backend architecture.
+A production-style backend portfolio project demonstrating a modern AI-integrated architecture.
 
-This project showcases how to integrate:
+## Architecture Overview
 
-- NestJS backend API
-- Python FastAPI AI service
-- OCR processing (Tesseract)
-- PostgreSQL application database
-- MongoDB AI processing logs
-- Docker-based development environment
-- React demo client
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         User Browser                            │
+│                                                                 │
+│   ┌──────────────────────────────────────────────────────────┐  │
+│   │         Demo Client  (React / Vite  :5173)               │  │
+│   └─────────────────────────┬────────────────────────────────┘  │
+└─────────────────────────────┼───────────────────────────────────┘
+                              │ POST /records/ocr (multipart)
+                              ▼
+              ┌───────────────────────────────┐
+              │   NestJS API  (:3000)         │
+              │                               │
+              │  HealthModule   GET /health   │
+              │  RecordsModule  POST /records/ocr
+              │  AiProxyModule  → AI service  │
+              └──────┬────────────────┬───────┘
+                     │                │
+          POST /ocr  │                │ store
+                     ▼                ├─────────────────────────┐
+         ┌───────────────────┐        ▼                         ▼
+         │  FastAPI AI (:8000)│  ┌──────────────┐  ┌─────────────────────┐
+         │                   │  │  PostgreSQL   │  │    MongoDB          │
+         │  GET  /health     │  │  :5432        │  │    :27017           │
+         │  POST /ocr        │  │               │  │                     │
+         │  Tesseract OCR    │  │  users        │  │  ocr_logs           │
+         └───────────────────┘  │  food_records │  │  (raw text + meta)  │
+                                └──────────────┘  └─────────────────────┘
+```
 
----
-
-# System Architecture
-
-```mermaid
-graph TD
-
-Client[User Browser]
-Demo[React Demo Client]
-API[NestJS Backend API]
-AI[FastAPI AI Service]
-OCR[Tesseract OCR Engine]
-PG[(PostgreSQL)]
-Mongo[(MongoDB)]
-
-Client --> Demo
-Demo --> API
-API --> AI
-AI --> OCR
-API --> PG
-API --> Mongo
-
-Image Upload
-↓
-Demo Client
-↓
-NestJS API
-↓
-AI Service (OCR)
-↓
-OCR Text Returned
-↓
-Store Result (PostgreSQL)
-↓
-Store Logs (MongoDB)
-
-# Project README
-
-## Development Environment Structure
-
-devcontainer.json
-- development tools
-- editor environment
-- node / python / pnpm / git
-
-docker-compose.yml
-- postgres
-- mongo
-- api
-- ai
-- demo
-
-apps/ai/Dockerfile
-- tesseract
-
-## Running the Project
-
-Start all services with Docker Compose.
+## Quick Start
 
 ```bash
 docker compose up --build
 ```
 
-After startup the following services will be available.
+All five services start automatically. On first run, Docker pulls base images and builds containers — this takes a few minutes. Subsequent runs are much faster.
 
-| Service | URL |
-|---|---|
-| Demo Client | http://localhost:5173 |
-| API Server | http://localhost:3000 |
-| Swagger API Docs | http://localhost:3000/docs |
-| AI Service | http://localhost:8000 |
+## Service URLs
 
----
+| Service        | URL                           |
+|----------------|-------------------------------|
+| Demo Client    | http://localhost:5173         |
+| API Server     | http://localhost:3000         |
+| Swagger Docs   | http://localhost:3000/docs    |
+| AI Service     | http://localhost:8000         |
+| PostgreSQL     | localhost:5432                |
+| MongoDB        | localhost:27017               |
 
-## Phase 0,1,1.5 - Execution / Verification Checklist
+## How to Test
 
-Once generated from this prompt, it is considered a success if the following conditions are met locally.
+### 1. Demo UI
 
-Run
-bashdocker compose up --build
+Open http://localhost:5173, select any image file containing text (e.g. a nutrition label photo), and click **Run OCR**. The extracted text and record ID are displayed on screen.
 
-Success Criteria
-1. Demo Client
+### 2. Health checks
 
- Confirm image upload and result display at http://localhost:5173 (or 3001, etc.)
+```bash
+curl http://localhost:3000/health
+# {"status":"ok"}
 
-2. NestJS Swagger
-
- Confirm access to http://localhost:3000/docs
-
-3. Health Check
-
- GET http://localhost:3000/health
- GET http://localhost:8000/health
-
-4. Upload Call Verification
-
- Upload API call is processed successfully, and
-
- Confirm row created in PostgreSQL food_records table
- Confirm document created in MongoDB ocr_logs collection
-
-
-## Phase 0 — Project Setup
-
-Prepare the monorepo development environment.
-
-### Infrastructure Components
-
-- NestJS API container
-- FastAPI AI container
-- PostgreSQL database
-- MongoDB database
-- React demo client
-
-### Service Ports
-
-| Service | Port |
-|---|---|
-| API | 3000 |
-| AI Service | 8000 |
-| Demo Client | 5173 |
-| PostgreSQL | 5432 |
-| MongoDB | 27017 |
-
-> The entire development environment runs through Docker Compose.
-
----
-
-## Phase 1 — Backend API
-
-The backend server is implemented using NestJS.
-
-### Core API Endpoints
-
-| Endpoint | Description |
-|---|---|
-| `POST /records/ocr` | Upload image and run OCR |
-| `GET /health` | API health check |
-
-### Swagger Documentation
-
-```
-http://localhost:3000/docs
+curl http://localhost:8000/health
+# {"status":"ok"}
 ```
 
-### Database Storage
+### 3. OCR via curl
 
-**PostgreSQL Tables**
+```bash
+# Using the NestJS API (end-to-end)
+curl -X POST http://localhost:3000/records/ocr \
+  -F "image=@/path/to/your/image.png"
 
-```
-users
-habits
-food_records
-```
-
-**MongoDB Collections**
-
-```
-ocr_logs
+# Direct AI service call
+curl -X POST http://localhost:8000/ocr \
+  -F "file=@/path/to/your/image.png"
 ```
 
-- PostgreSQL stores normalized application data.
-- MongoDB stores AI processing logs.
-
----
-
-## Phase 1.5 — Demo Client
-
-A simple React application is provided to test the backend.
-
-### Demo URL
-
-```
-http://localhost:5173
-```
-
-### Features
-
-- Image upload
-- Run OCR API request
-- Display extracted OCR text
-- Display created record ID
-
-### Purpose
-
-Allow reviewers and interviewers to easily test the backend system.
-
----
-
-## Future Phases
-
-### Phase 2 — AI Service Improvements
-
-- OCR accuracy improvements
-- Image preprocessing
-- Asynchronous processing
-
-### Phase 3 — LLM Data Structuring
-
-Convert OCR text into structured JSON.
-
-**Example**
-
+Expected response:
 ```json
 {
-  "product_name": "Milk",
-  "calories": 120,
-  "protein": "6g"
+  "text": "Nutrition Facts\nCalories 150\n...",
+  "recordId": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
-- Structured data will be stored in PostgreSQL.
-- AI processing logs will be stored in MongoDB.
+### 4. Generate a test image
 
-### Phase 4 — External Integration
+```bash
+cd apps/ai/samples
+pip install Pillow
+python create_sample.py
+# -> creates sample.png with nutrition label text
 
-- Google Calendar API integration
-- Firebase Cloud Messaging
-- Reminder notifications
+curl -X POST http://localhost:3000/records/ocr \
+  -F "image=@apps/ai/samples/sample.png"
+```
 
----
+### 5. Swagger UI
 
-## Portfolio Purpose
+Browse and test all endpoints at http://localhost:3000/docs.
 
-This project demonstrates the following engineering capabilities.
+### 6. Query the databases directly
 
-- Backend API architecture
-- AI service integration
-- OCR processing pipelines
-- Database modeling
-- Containerized development
-- External API integration
-- Modular backend design
+**PostgreSQL**
 
----
+```bash
+# Open an interactive psql session
+docker exec -it ai-habit-postgres psql -U app -d app
+
+# Useful queries
+SELECT * FROM users;
+SELECT id, user_id, product_name, calories, protein, created_at FROM food_records ORDER BY created_at DESC;
+
+# Exit
+\q
+```
+
+Run a one-off query without entering the shell:
+```bash
+docker exec ai-habit-postgres psql -U app -d app \
+  -c "SELECT * FROM food_records ORDER BY created_at DESC LIMIT 10;"
+```
+
+**MongoDB**
+
+```bash
+# Open an interactive mongosh session
+docker exec -it ai-habit-mongo mongosh
+
+# Useful queries
+use ai_habit
+db.ocr_logs.find().sort({ createdAt: -1 }).pretty()
+db.ocr_logs.countDocuments()
+
+# Exit
+exit
+```
+
+Run a one-off query without entering the shell:
+```bash
+docker exec ai-habit-mongo mongosh \
+  --eval "db.getSiblingDB('ai_habit').ocr_logs.find().sort({ createdAt: -1 }).pretty()"
+```
+
+**GUI tools**
+
+| Database   | Tool                | Connection                                              |
+|------------|---------------------|---------------------------------------------------------|
+| PostgreSQL | TablePlus / DBeaver | host `localhost:5432`, user `app`, password `app`, db `app` |
+| MongoDB    | MongoDB Compass     | `mongodb://localhost:27017`                             |
+
+## Environment Variables
+
+### Root / Docker Compose
+
+| Variable           | Default                                | Description                    |
+|--------------------|----------------------------------------|--------------------------------|
+| `POSTGRES_USER`    | `app`                                  | PostgreSQL user                |
+| `POSTGRES_PASSWORD`| `app`                                  | PostgreSQL password            |
+| `POSTGRES_DB`      | `app`                                  | PostgreSQL database name       |
+
+### apps/api
+
+| Variable       | Default                              | Description                      |
+|----------------|--------------------------------------|----------------------------------|
+| `DATABASE_URL` | `postgresql://app:app@postgres:5432/app` | Prisma connection string     |
+| `MONGO_URL`    | `mongodb://mongo:27017`              | MongoDB connection string        |
+| `AI_BASE_URL`  | `http://ai:8000`                     | AI service base URL              |
+
+### apps/demo
+
+| Variable            | Default                   | Description                               |
+|---------------------|---------------------------|-------------------------------------------|
+| `VITE_API_BASE_URL` | `http://localhost:3000`   | API URL (browser-side, use `localhost`)   |
+
+## Project Structure
+
+```
+.
+├── apps/
+│   ├── api/          # NestJS backend (Phase 1)
+│   │   ├── prisma/   # Prisma schema
+│   │   └── src/
+│   │       ├── health/     # GET /health
+│   │       ├── records/    # POST /records/ocr
+│   │       ├── ai-proxy/   # AI service client
+│   │       ├── prisma/     # Prisma service
+│   │       └── mongo/      # MongoDB service
+│   ├── ai/           # FastAPI AI service (Phase 2)
+│   │   └── samples/  # Sample images for testing
+│   └── demo/         # React demo client (Phase 1.5)
+├── docs/             # Architecture & phase docs
+├── docker-compose.yml
+└── README.md
+```
+
+## Database Schema
+
+### PostgreSQL (Prisma)
+
+```sql
+users        (id, email, created_at)
+food_records (id, user_id, raw_text, product_name, calories, protein, created_at)
+```
+
+### MongoDB
+
+```
+ocr_logs: { userId, rawText, source, createdAt }
+```
+
+A demo user (`demo@local`) is created automatically on API startup.
+
+## Development (without Docker)
+
+```bash
+# API
+cd apps/api
+cp .env.example .env   # edit DATABASE_URL, MONGO_URL, AI_BASE_URL
+npm install
+npx prisma db push
+npm run start:dev
+
+# AI service
+cd apps/ai
+pip install -r requirements.txt
+uvicorn main:app --reload
+
+# Demo
+cd apps/demo
+cp .env.example .env
+npm install
+npm run dev
+```
+
+## Resetting the Database
+
+To clear all data from both databases:
+
+**PostgreSQL** — truncate `food_records` and `users` together:
+
+```bash
+docker exec ai-habit-postgres psql -U app -d app \
+  -c "TRUNCATE food_records, users RESTART IDENTITY CASCADE;"
+```
+
+**MongoDB** — delete all documents from `ocr_logs`:
+
+```bash
+docker exec ai-habit-mongo mongosh \
+  --eval "db.getSiblingDB('ai_habit').ocr_logs.deleteMany({})"
+```
+
+**Both at once:**
+
+```bash
+docker exec ai-habit-postgres psql -U app -d app \
+  -c "TRUNCATE food_records, users RESTART IDENTITY CASCADE;" && \
+docker exec ai-habit-mongo mongosh \
+  --eval "db.getSiblingDB('ai_habit').ocr_logs.deleteMany({})"
+```
+
+> The demo user (`demo@local`) is automatically re-created on the next API request.
 
 ## License
 
-This repository is provided for portfolio demonstration purposes only.  
-Unauthorized copying, modification, or commercial use of the code is prohibited.
-
+Portfolio demonstration purposes only.
 © 2026 Jinsu Kim

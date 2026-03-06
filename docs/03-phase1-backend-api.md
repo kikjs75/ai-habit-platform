@@ -45,9 +45,17 @@ tables
 
 users
 
-habits
-
 food_records
+
+food_records fields
+
+- id
+- user_id
+- raw_text
+- product_name
+- calories
+- protein
+- created_at
 
 Requirements
 

@@ -1,0 +1,31 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  createdAt   DateTime     @default(now()) @map("created_at")
+  foodRecords FoodRecord[]
+
+  @@map("users")
+}
+
+model FoodRecord {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  rawText     String   @map("raw_text")
+  productName String?  @map("product_name")
+  calories    Int?
+  protein     String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@map("food_records")
+}
