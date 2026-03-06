@@ -39,4 +39,17 @@ export class MongoService implements OnModuleInit, OnModuleDestroy {
     });
     return result.insertedId.toString();
   }
+
+  async insertLlmResult(data: {
+    userId: string;
+    rawText: string;
+    structuredOutput: Record<string, unknown>;
+  }): Promise<string> {
+    const collection = this.db.collection('llm_results');
+    const result = await collection.insertOne({
+      ...data,
+      timestamp: new Date(),
+    });
+    return result.insertedId.toString();
+  }
 }

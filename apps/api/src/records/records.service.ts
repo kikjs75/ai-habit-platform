@@ -13,9 +13,13 @@ export class RecordsService {
     private mongo: MongoService,
   ) {}
 
-  async processOcr(
-    file: Express.Multer.File,
-  ): Promise<{ text: string; recordId: string }> {
+  async processOcr(file: Express.Multer.File): Promise<{
+    text: string;
+    recordId: string;
+    productName: string | null;
+    calories: number | null;
+    protein: string | null;
+  }> {
     // 1. Run OCR via AI service
     const ocrResult = await this.aiProxy.runOcr(file);
     const { text } = ocrResult;
@@ -27,23 +31,48 @@ export class RecordsService {
       create: { email: 'demo@local' },
     });
 
-    // 3. Store normalized record in Postgres
+    // 3. Store raw record in PostgreSQL
     const record = await this.prisma.foodRecord.create({
-      data: {
-        userId: user.id,
-        rawText: text,
-      },
+      data: { userId: user.id, rawText: text },
     });
 
-    // 4. Store log document in Mongo
+    // 4. Store OCR log in MongoDB
     await this.mongo.insertOcrLog({
       userId: user.id,
       rawText: text,
       source: 'ocr',
     });
 
-    this.logger.log(`Created food_record ${record.id}`);
+    this.logger.log(`Created food_record ${record.id}, running LLM structuring`);
 
-    return { text, recordId: record.id };
+    // 5. Run LLM structuring via AI service
+    const llmResult = await this.aiProxy.runLlm(text);
+
+    // 6. Update food_record with structured fields
+    await this.prisma.foodRecord.update({
+      where: { id: record.id },
+      data: {
+        productName: llmResult.product_name ?? null,
+        calories: llmResult.calories ?? null,
+        protein: llmResult.protein ?? null,
+      },
+    });
+
+    // 7. Store LLM result log in MongoDB
+    await this.mongo.insertLlmResult({
+      userId: user.id,
+      rawText: text,
+      structuredOutput: llmResult as unknown as Record<string, unknown>,
+    });
+
+    this.logger.log(`food_record ${record.id} updated with LLM structured data`);
+
+    return {
+      text,
+      recordId: record.id,
+      productName: llmResult.product_name ?? null,
+      calories: llmResult.calories ?? null,
+      protein: llmResult.protein ?? null,
+    };
   }
 }

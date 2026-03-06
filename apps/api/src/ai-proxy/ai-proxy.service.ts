@@ -8,6 +8,12 @@ export interface OcrResult {
   engine: string;
 }
 
+export interface LlmResult {
+  product_name: string | null;
+  calories: number | null;
+  protein: string | null;
+}
+
 @Injectable()
 export class AiProxyService {
   private readonly logger = new Logger(AiProxyService.name);
@@ -29,6 +35,20 @@ export class AiProxyService {
       headers: formData.getHeaders(),
       timeout: 30000,
     });
+
+    return response.data;
+  }
+
+  async runLlm(text: string): Promise<LlmResult> {
+    const aiBaseUrl = this.config.get<string>('AI_BASE_URL', 'http://ai:8000');
+
+    this.logger.log('Sending text to LLM for structuring');
+
+    const response = await axios.post<LlmResult>(
+      `${aiBaseUrl}/llm`,
+      { text },
+      { timeout: 120000 },
+    );
 
     return response.data;
   }

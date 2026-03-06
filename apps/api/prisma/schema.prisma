@@ -11,7 +11,7 @@ datasource db {
 model User {
   id          String       @id @default(uuid())
   email       String       @unique
-  createdAt   DateTime     @default(now()) @map("created_at")
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
   foodRecords FoodRecord[]
 
   @@map("users")
@@ -24,7 +24,7 @@ model FoodRecord {
   productName String?  @map("product_name")
   calories    Int?
   protein     String?
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   user        User     @relation(fields: [userId], references: [id])
 
   @@map("food_records")
