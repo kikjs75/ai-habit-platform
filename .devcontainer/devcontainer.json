@@ -1,0 +1,41 @@
+{
+  "name": "AI Habit Platform Dev",
+
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+
+  "remoteUser": "node",
+
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+
+  "forwardPorts": [
+    3000,
+    5173,
+    8000,
+    5432,
+    27017
+  ],
+
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/python:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "eamodio.gitlens"
+      ]
+    }
+  },
+
+  "postCreateCommand": "corepack enable && corepack prepare pnpm@latest --activate",
+  "postStartCommand": "echo DevContainer Ready"
+}
