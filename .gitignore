@@ -35,3 +35,4 @@ shared/
 *.cert
 fcm-sender.json
 google-services.json
+client_secret*.json

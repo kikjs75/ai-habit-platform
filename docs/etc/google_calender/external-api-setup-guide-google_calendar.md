@@ -141,4 +141,17 @@ GOOGLE_CALENDAR_SCOPES=https://www.googleapis.com/auth/calendar.events
 - [ ] 테스트용 Google 계정 준비
 - [ ] NestJS .env에 값 등록
 
-#
+## 3.8 주요 설정
+### 3.8.1 OAuth Consent Screen 설정(google auth platform - blanding)
+- 앱 이름 : AI Habit Reminder
+- 사용자 지원 이메일 : kikjs75@gmail.com
+- 연락처 정보 : AI Habit Reminder
+### 3.8.2 OAuth Client 생성
+- 애플리케이션 유형 : 웹 애플리케이션
+- 이름 : ai-habit-platform-web
+- Redirect URL : http://localhost:3000/auth/google/callback
+- Client ID(클라이언트 ID) : 
+281416133101-ip757n9nanj36p7h7jrgehloli070ijo.apps.g
+oogleusercontent.com
+- Client Secret(클라이언트 보안 비밀번호) : 
+- JSON : client_secret_281416133101-ip757n9nanj36p7h7jrgehloli070ijo.apps.googleusercontent.com.json
