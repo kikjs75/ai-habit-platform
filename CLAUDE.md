@@ -53,3 +53,7 @@ Development principles
 - maintainable code
 
 Claude should implement the project **phase by phase**.
+
+Memory management
+
+After completing any meaningful work (new feature, bug fix, design decision, config change), always update `/home/node/.claude/projects/-workspace/memory/MEMORY.md` to reflect the latest state.

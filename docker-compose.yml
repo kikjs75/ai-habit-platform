@@ -72,8 +72,15 @@ services:
       DATABASE_URL: postgresql://app:app@postgres:5432/app
       MONGO_URL: mongodb://mongo:27017
       AI_BASE_URL: http://ai:8000
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      FCM_KEY_PATH: /secrets/fcm-sender.json
+      FCM_TEST_TOKEN: ${FCM_TEST_TOKEN}
     ports:
       - "3000:3000"
+    volumes:
+      - ./docs/etc/fcm/fcm-sender.json:/secrets/fcm-sender.json:ro
     depends_on:
       postgres:
         condition: service_healthy

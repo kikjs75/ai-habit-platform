@@ -157,45 +157,67 @@ docker exec ai-habit-mongo mongosh \
 
 ## Environment Variables
 
-### Root / Docker Compose
+모든 환경변수는 루트의 `.env`에서 관리합니다. `.env.example`을 복사해서 사용하세요.
 
-| Variable           | Default                                | Description                    |
-|--------------------|----------------------------------------|--------------------------------|
-| `POSTGRES_USER`    | `app`                                  | PostgreSQL user                |
-| `POSTGRES_PASSWORD`| `app`                                  | PostgreSQL password            |
-| `POSTGRES_DB`      | `app`                                  | PostgreSQL database name       |
+```bash
+cp .env.example .env
+```
 
-### apps/api
+> `.env`는 `.gitignore`에 등록되어 있어 git에 커밋되지 않습니다.
+> `docker-compose.yml`은 `.env`의 값을 `${VAR}` 형태로 참조합니다.
 
-| Variable       | Default                              | Description                      |
-|----------------|--------------------------------------|----------------------------------|
-| `DATABASE_URL` | `postgresql://app:app@postgres:5432/app` | Prisma connection string     |
-| `MONGO_URL`    | `mongodb://mongo:27017`              | MongoDB connection string        |
-| `AI_BASE_URL`  | `http://ai:8000`                     | AI service base URL              |
+### 기본 인프라
 
-### apps/demo
+| Variable            | Default                                   | Description                             |
+|---------------------|-------------------------------------------|-----------------------------------------|
+| `POSTGRES_USER`     | `app`                                     | PostgreSQL user                         |
+| `POSTGRES_PASSWORD` | `app`                                     | PostgreSQL password                     |
+| `POSTGRES_DB`       | `app`                                     | PostgreSQL database name                |
+| `DATABASE_URL`      | `postgresql://app:app@postgres:5432/app`  | Prisma connection string                |
+| `MONGO_URL`         | `mongodb://mongo:27017`                   | MongoDB connection string               |
+| `AI_BASE_URL`       | `http://ai:8000`                          | AI service base URL                     |
+| `VITE_API_BASE_URL` | `http://localhost:3000`                   | API URL (브라우저용, localhost 사용)     |
 
-| Variable            | Default                   | Description                               |
-|---------------------|---------------------------|-------------------------------------------|
-| `VITE_API_BASE_URL` | `http://localhost:3000`   | API URL (browser-side, use `localhost`)   |
+### Google Calendar (Phase 4)
+
+| Variable                | Description                                                        |
+|-------------------------|--------------------------------------------------------------------|
+| `GOOGLE_CLIENT_ID`      | Google OAuth Client ID (`client_secret_*.json`의 `client_id`)      |
+| `GOOGLE_CLIENT_SECRET`  | Google OAuth Client Secret (`client_secret_*.json`의 `client_secret`) |
+| `GOOGLE_REDIRECT_URI`   | OAuth 콜백 URI (`http://localhost:3000/auth/google/callback`)       |
+
+> `client_secret_*.json` 파일의 내용을 직접 로드하지 않고, 필요한 세 값만 환경변수로 분리해서 사용합니다.
+
+### Firebase Cloud Messaging (Phase 4)
+
+| Variable         | Description                                             |
+|------------------|---------------------------------------------------------|
+| `FCM_TEST_TOKEN` | 테스트 디바이스의 FCM Registration Token                |
+
+> FCM 서비스 계정 인증은 `docs/etc/fcm/fcm-sender.json`을 Docker 볼륨으로 마운트합니다 (`/secrets/fcm-sender.json`).
+> 이 파일도 `.gitignore`에 등록되어 있습니다.
 
 ## Project Structure
 
 ```
 .
 ├── apps/
-│   ├── api/          # NestJS backend (Phase 1)
+│   ├── api/          # NestJS backend
 │   │   ├── prisma/   # Prisma schema
 │   │   └── src/
-│   │       ├── health/     # GET /health
-│   │       ├── records/    # POST /records/ocr
-│   │       ├── ai-proxy/   # AI service client
-│   │       ├── prisma/     # Prisma service
-│   │       └── mongo/      # MongoDB service
-│   ├── ai/           # FastAPI AI service (Phase 2)
+│   │       ├── health/       # GET /health
+│   │       ├── records/      # POST /records/ocr
+│   │       ├── ai-proxy/     # AI service client
+│   │       ├── prisma/       # Prisma service
+│   │       ├── mongo/        # MongoDB service
+│   │       ├── auth/         # Google OAuth2 (Phase 4)
+│   │       ├── calendar/     # Google Calendar (Phase 4)
+│   │       └── notification/ # FCM push (Phase 4)
+│   ├── ai/           # FastAPI AI service (Phase 2/3)
 │   │   └── samples/  # Sample images for testing
 │   └── demo/         # React demo client (Phase 1.5)
 ├── docs/             # Architecture & phase docs
+├── .env.example      # 환경변수 템플릿 (민감한 값은 .env에만 보관)
 ├── docker-compose.yml
 └── README.md
 ```
@@ -277,17 +299,65 @@ docker exec ai-habit-mongo mongosh \
 | 1.5 | Demo Client — React image upload + OCR result | ✅ Done |
 | 2 | AI Service — FastAPI + Tesseract OCR | ✅ Done |
 | 3 | LLM Processing — structured data extraction | ✅ Done |
-| 3.5 | Phase 4 Preparation — Google Calendar & FCM external API setup | ✅ Done |
-| 4 | External Integration — Google Calendar + FCM | 🔜 Next |
+| 4 | External Integration — Google Calendar + FCM | ✅ Done |
 
-### Phase 4 준비 완료 사항
-- Google Cloud 프로젝트 생성 (`ai-habit-platform-dev`)
-- Google Calendar API 활성화 및 OAuth 2.0 Client 구성
-- Firebase 프로젝트 생성 및 FCM 서비스 계정 설정
-- 자격증명 파일은 로컬에만 보관 (`.gitignore` 처리)
+### Phase 4 구현 내용
 
-### How to continue with Claude Code
-Just say **"Phase 4 진행해줘"** or **"이어서 해줘"** at the start of the next session.
+**Google Calendar 연동**
+- Google OAuth 2.0 웹 서버 플로우 구현 (`GET /auth/google` → 콜백 → 토큰 인메모리 저장)
+- 식사/물 마시기 리마인더 이벤트 생성 (`POST /calendar/events`)
+- 스코프: `https://www.googleapis.com/auth/calendar.events`
+
+**Firebase Cloud Messaging (FCM) 연동**
+- Firebase Admin SDK 기반 서버 푸시 전송 (`POST /notifications/send`)
+- 서비스 계정 JSON을 Docker 볼륨으로 마운트하여 인증
+- 테스트 디바이스 토큰은 환경변수(`FCM_TEST_TOKEN`)로 관리
+
+**Demo UI 업데이트**
+- Google Calendar 인증 버튼 + 이벤트 생성 폼 추가
+- FCM 알림 전송 폼 추가
+
+**새 API 엔드포인트**
+
+| Method | Path | 설명 |
+|--------|------|------|
+| `GET` | `/auth/google` | Google OAuth 인증 페이지 리다이렉트 |
+| `GET` | `/auth/google/callback` | OAuth 콜백 처리 (토큰 저장) |
+| `POST` | `/calendar/events` | 캘린더 리마인더 이벤트 생성 |
+| `POST` | `/notifications/send` | FCM 푸시 알림 전송 |
+
+### Phase 4 사용 흐름
+
+```bash
+# 1. Google Calendar 인증 (브라우저에서)
+open http://localhost:3000/auth/google
+
+# 2. 캘린더 이벤트 생성
+curl -X POST http://localhost:3000/calendar/events \
+  -H "Content-Type: application/json" \
+  -d '{"type":"meal","time":"2026-03-08T12:00:00+09:00"}'
+
+# 3. FCM 푸시 전송
+curl -X POST http://localhost:3000/notifications/send \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Don'\''t forget to log your meal!"}'
+```
+
+### Phase 4 환경변수 설정 방법
+
+민감한 값은 `.env`에만 보관합니다 (gitignore 처리). `docker-compose.yml`은 `${VAR}` 참조만 사용합니다.
+
+```bash
+# .env 에 아래 항목 추가
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=http://localhost:3000/auth/google/callback
+FCM_TEST_TOKEN=...
+```
+
+FCM 서비스 계정 JSON(`fcm-sender.json`)은 Docker 볼륨으로 마운트합니다 — 별도 환경변수 불필요.
+
+> 자세한 항목은 [환경변수 섹션](#environment-variables)을 참고하세요.
 
 ## License
 
