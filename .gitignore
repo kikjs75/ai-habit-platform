@@ -36,3 +36,4 @@ shared/
 fcm-sender.json
 google-services.json
 client_secret*.json
+import_info.txt
