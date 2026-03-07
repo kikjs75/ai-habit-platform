@@ -276,11 +276,18 @@ docker exec ai-habit-mongo mongosh \
 | 1 | Backend API — NestJS, PostgreSQL, MongoDB | ✅ Done |
 | 1.5 | Demo Client — React image upload + OCR result | ✅ Done |
 | 2 | AI Service — FastAPI + Tesseract OCR | ✅ Done |
-| 3 | LLM Processing — structured data extraction | 🔜 Next |
-| 4 | External Integration — Google Calendar + FCM | ⏳ Pending |
+| 3 | LLM Processing — structured data extraction | ✅ Done |
+| 3.5 | Phase 4 Preparation — Google Calendar & FCM external API setup | ✅ Done |
+| 4 | External Integration — Google Calendar + FCM | 🔜 Next |
+
+### Phase 4 준비 완료 사항
+- Google Cloud 프로젝트 생성 (`ai-habit-platform-dev`)
+- Google Calendar API 활성화 및 OAuth 2.0 Client 구성
+- Firebase 프로젝트 생성 및 FCM 서비스 계정 설정
+- 자격증명 파일은 로컬에만 보관 (`.gitignore` 처리)
 
 ### How to continue with Claude Code
-Just say **"Phase 3 진행해줘"** or **"이어서 해줘"** at the start of the next session.
+Just say **"Phase 4 진행해줘"** or **"이어서 해줘"** at the start of the next session.
 
 ## License
 
