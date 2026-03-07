@@ -123,3 +123,18 @@ GOOGLE_APPLICATION_CREDENTIALS=/workspace/secrets/firebase-service-account.json
 - [ ] FCM API 활성화 확인
 - [ ] NestJS `.env` 등록
 - [ ] 테스트용 토큰 저장
+
+## 4.9 주요 정보
+- 프로젝트 이름 : `ai-habit-platform-dev`
+- 앱-Android 패키지 이름 : com.jscompany.aihabit
+- 앱-닉네임 : aihabit
+- google-services.json(Firebase Registration token 생성 위한 JSON) : google-services.json
+- 앱-Registration token
+```
+2026-03-07 19:23:50.160  4869-4869  FCM                     com.jscompany.aihabit                D  Registration token: cRcW83AmTBKYwaRncGoWc1:APA91bG6KoY8xRnirdfRfyTrPFSETiju-86jt1nXaDj5M36m2bvNIDtVm1HaKdYIoxDdXaFAnp3Dcrddy9XqDuDDKTCO8P0EV8Jt12PxO6o_HdnBhgoThZ4
+```
+- 앱(서비스 계정 이름) : fcm-sender
+- 앱-(서비스 계정 ID) : fcm-sender
+- 앱-(서비스 계정 설명) : Service account for sending FCM messages
+- 앱-(서비스 계정 역할) : Firebase Cloud Messaging API Admin
+- 앱-(service-account.json | NestJS 서버에서 인증에 쓰는 핵심 키) : ai-habit-platform-dev-d022b23cbf17.json => fcm-sender.json

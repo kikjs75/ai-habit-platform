@@ -33,3 +33,5 @@ shared/
 *.pem
 *.key
 *.cert
+fcm-sender.json
+google-services.json
