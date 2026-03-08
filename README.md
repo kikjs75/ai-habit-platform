@@ -343,6 +343,31 @@ curl -X POST http://localhost:3000/notifications/send \
   -d '{"message":"Don'\''t forget to log your meal!"}'
 ```
 
+### Phase 4 동작 확인 (2026-03-08)
+
+**Google Calendar OAuth2 흐름**
+
+| 단계 | 화면 |
+|------|------|
+| ① 미확인 앱 경고 (테스트 모드) | ![oauth1](images/oauth2_capture_1.jpg) |
+| ② 캘린더 권한 동의 | ![oauth2](images/oauth2_capture_2.jpg) |
+| ③ 인증 완료 콜백 | ![oauth3](images/oauth2_capture_3.jpg) |
+
+**Google Calendar 이벤트 생성**
+
+| 단계 | 화면 |
+|------|------|
+| API 응답 (eventId 반환) | ![cal1](images/fcm_capture_1.jpg) |
+| Google Calendar 등록 확인 | ![cal2](images/fcm_capture_2.jpg) |
+
+**FCM 푸시 알림**
+
+| 단계 | 화면 |
+|------|------|
+| API 응답 (messageId 반환) | ![fcm1](images/fcm_capture_3.jpg) |
+| 알림 권한 요청 (Android) | ![fcm2](images/fcm_capture_4.jpg) |
+| 알림 수신 확인 (Android 에뮬레이터) | ![fcm3](images/fcm_capture_5.jpg) |
+
 ### Phase 4 환경변수 설정 방법
 
 민감한 값은 `.env`에만 보관합니다 (gitignore 처리). `docker-compose.yml`은 `${VAR}` 참조만 사용합니다.
