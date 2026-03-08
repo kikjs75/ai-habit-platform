@@ -3,6 +3,7 @@ import json
 import logging
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone, timedelta
 
 import pytesseract
 import torch
@@ -10,9 +11,39 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 from pydantic import BaseModel
+from pythonjsonlogger import jsonlogger
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-logging.basicConfig(level=logging.INFO)
+KST = timezone(timedelta(hours=9))
+
+_STDLIB_ATTRS = frozenset({
+    "args", "asctime", "created", "exc_info", "exc_text", "filename",
+    "funcName", "levelname", "levelno", "lineno", "message", "module",
+    "msecs", "msg", "name", "pathname", "process", "processName",
+    "relativeCreated", "stack_info", "thread", "threadName", "taskName",
+})
+
+
+class CustomJsonFormatter(jsonlogger.JsonFormatter):
+    def add_fields(self, log_record: dict, record: logging.LogRecord, message_dict: dict) -> None:
+        super().add_fields(log_record, record, message_dict)
+        log_record["timestamp"] = datetime.now(KST).isoformat(timespec="milliseconds")
+        log_record["level"] = record.levelname
+        log_record["logger"] = record.name
+        log_record["service"] = "fastapi-ai"
+        for key, value in record.__dict__.items():
+            if key not in _STDLIB_ATTRS and key not in log_record:
+                log_record[key] = value
+        if record.exc_info:
+            log_record["traceback"] = self.formatException(record.exc_info)
+            record.exc_info = None
+            record.exc_text = None
+
+
+_handler = logging.StreamHandler()
+_handler.setFormatter(CustomJsonFormatter())
+logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().addHandler(_handler)
 logger = logging.getLogger(__name__)
 
 MODEL_NAME = os.environ.get("LLM_MODEL", "Qwen/Qwen2.5-1.5B-Instruct")

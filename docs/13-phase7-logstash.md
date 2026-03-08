@@ -3,7 +3,10 @@
 ## 목표
 
 Logstash 파이프라인을 추가하여 Filebeat로부터 로그를 받아
-NestJS, FastAPI 로그를 각각 파싱하고 구조화된 형태로 Elasticsearch에 저장한다.
+JSON 파싱 후 Elasticsearch에 저장한다.
+
+> **설계 결정**: grok 패턴 방식 대신 JSON 구조화 로깅 방식을 채택한다.
+> 상세 배경은 `docs/15-logging-strategy.md` 참조.
 
 ## 작업 내용
 
@@ -30,6 +33,9 @@ xpack.monitoring.enabled: false
 
 `apps/logstash/pipeline/logstash.conf`
 
+앱이 JSON을 직접 출력하므로 grok 없이 `json` 필터만 사용한다.
+JSON이 아닌 로그(ELK 컴포넌트 자체 로그 등)는 드롭하여 재귀 루프를 방지한다.
+
 ```
 input {
   beats {
@@ -38,60 +44,41 @@ input {
 }
 
 filter {
-  # NestJS API 로그 파싱
-  if [container][name] == "ai-habit-api" {
-    grok {
-      match => {
-        "message" => "\[Nest\] %{NUMBER:pid}\s+- %{DATA:timestamp}\s+%{LOGLEVEL:log_level} \[%{DATA:context}\] %{GREEDYDATA:log_message}"
-      }
-    }
-    mutate {
-      add_field => { "service" => "nestjs-api" }
-    }
+  # JSON 형식이 아닌 이벤트 드롭 (ELK 자체 로그, 기타 컨테이너 로그 등)
+  if [message] !~ /^\s*\{/ {
+    drop {}
   }
 
-  # FastAPI AI 서비스 로그 파싱
-  if [container][name] == "ai-habit-ai" {
-    grok {
-      match => {
-        "message" => "%{LOGLEVEL:log_level}:%{SPACE}%{IPORHOST:client_ip}:%{NUMBER:client_port} - \"%{WORD:method} %{URIPATHPARAM:path} HTTP/%{NUMBER:http_version}\" %{NUMBER:status_code}"
-      }
-    }
-    mutate {
-      add_field => { "service" => "fastapi-ai" }
-      convert => { "status_code" => "integer" }
-    }
+  # message 필드의 JSON 파싱
+  json {
+    source => "message"
   }
 
-  # 파싱 실패한 태그 제거
-  if "_grokparsefailure" in [tags] {
-    mutate {
-      remove_tag => ["_grokparsefailure"]
-    }
+  # JSON 파싱 실패 이벤트 드롭
+  if "_jsonparsefailure" in [tags] {
+    drop {}
   }
 
-  # 타임스탬프 정리
-  date {
-    match => ["timestamp", "MM/dd/yyyy, hh:mm:ss a"]
-    target => "@timestamp"
-    timezone => "Asia/Seoul"
+  # ELK 컴포넌트 자체 로그 드롭 (ECS 포맷 — service.name 필드 존재)
+  if [service.name] {
+    drop {}
   }
 }
 
 output {
   if [service] == "nestjs-api" {
     elasticsearch {
-      hosts => ["elasticsearch:9200"]
+      hosts => ["http://elasticsearch:9200"]
       index => "ai-habit-api-logs-%{+yyyy.MM.dd}"
     }
   } else if [service] == "fastapi-ai" {
     elasticsearch {
-      hosts => ["elasticsearch:9200"]
+      hosts => ["http://elasticsearch:9200"]
       index => "ai-habit-ai-logs-%{+yyyy.MM.dd}"
     }
   } else {
     elasticsearch {
-      hosts => ["elasticsearch:9200"]
+      hosts => ["http://elasticsearch:9200"]
       index => "ai-habit-other-logs-%{+yyyy.MM.dd}"
     }
   }
@@ -120,13 +107,27 @@ logstash:
     - appnet
 ```
 
-### 5. Filebeat output 변경
+### 5. Filebeat output 확인
 
-`apps/filebeat/filebeat.yml`의 output을 Logstash로 전환:
+`apps/filebeat/filebeat.yml`의 output이 Logstash로 설정되어 있는지 확인:
 
 ```yaml
 output.logstash:
   hosts: ["logstash:5044"]
+```
+
+## 기대 로그 포맷
+
+### NestJS API
+
+```json
+{"timestamp": "2026-03-08T19:00:00.123+09:00", "level": "info", "service": "nestjs-api", "context": "HTTP", "message": "POST /records/ocr 200 1243ms"}
+```
+
+### FastAPI AI
+
+```json
+{"timestamp": "2026-03-08T19:00:00.456+09:00", "level": "INFO", "service": "fastapi-ai", "logger": "main", "message": "OCR completed, extracted 42 chars"}
 ```
 
 ## 검증 방법
@@ -143,13 +144,13 @@ curl http://localhost:9200/ai-habit-api-logs-*/_count
 curl http://localhost:9200/ai-habit-ai-logs-*/_count
 
 # 실제 도큐먼트 확인
-curl http://localhost:9200/ai-habit-api-logs-*/_search?pretty&size=3
+curl "http://localhost:9200/ai-habit-api-logs-*/_search?pretty&size=3"
 ```
 
 ## 완료 조건
 
 - [ ] Logstash 컨테이너 정상 구동
 - [ ] Filebeat → Logstash Beats 연결 확인
-- [ ] NestJS 로그 파싱 후 `ai-habit-api-logs-*` 인덱스 적재 확인
-- [ ] FastAPI 로그 파싱 후 `ai-habit-ai-logs-*` 인덱스 적재 확인
-- [ ] `service`, `log_level`, `context` 필드 구조화 확인
+- [ ] NestJS JSON 로그 파싱 후 `ai-habit-api-logs-*` 인덱스 적재 확인
+- [ ] FastAPI JSON 로그 파싱 후 `ai-habit-ai-logs-*` 인덱스 적재 확인
+- [ ] `service`, `level`, `context`, `timestamp` 필드 구조화 확인

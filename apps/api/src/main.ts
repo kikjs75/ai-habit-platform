@@ -3,11 +3,12 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggingInterceptor } from './common/logging.interceptor';
+import { createJsonLogger } from './common/json-logger';
 import { PrismaService } from './prisma/prisma.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn', 'log'],
+    logger: createJsonLogger(),
   });
 
   app.enableCors();
