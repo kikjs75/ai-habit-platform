@@ -27,18 +27,28 @@ AI processing logs
 
 Infrastructure
 
-Docker  
+Docker
 Docker Compose
+ELK Stack (Elasticsearch, Logstash, Kibana, Filebeat)
 
 External integrations
 
-Google Calendar API  
+Google Calendar API
 Firebase Cloud Messaging
+
+Log monitoring
+
+Filebeat — Docker container log collection
+Logstash — log parsing and transformation pipeline
+Elasticsearch — log storage and search
+Kibana — dashboard and visualization
 
 Key skills demonstrated
 
-REST API design  
-AI service integration  
-database modeling  
-containerized development  
+REST API design
+AI service integration
+database modeling
+containerized development
 external API integration
+log pipeline architecture
+observability and monitoring

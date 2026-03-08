@@ -37,12 +37,16 @@ Development must follow the phases defined in the docs directory.
 
 Implementation order
 
-Phase 0 → Project Setup  
-Phase 1 → Backend API  
-Phase 1.5 → Demo Client  
-Phase 2 → AI Service  
-Phase 3 → LLM Processing  
+Phase 0 → Project Setup
+Phase 1 → Backend API
+Phase 1.5 → Demo Client
+Phase 2 → AI Service
+Phase 3 → LLM Processing
 Phase 4 → External Integration
+Phase 5 → Elasticsearch
+Phase 6 → Filebeat
+Phase 7 → Logstash
+Phase 8 → Kibana
 
 Development principles
 

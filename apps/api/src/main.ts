@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { LoggingInterceptor } from './common/logging.interceptor';
 import { PrismaService } from './prisma/prisma.service';
 
 async function bootstrap() {
@@ -10,6 +11,7 @@ async function bootstrap() {
   });
 
   app.enableCors();
+  app.useGlobalInterceptors(new LoggingInterceptor());
 
   // Swagger
   const swaggerConfig = new DocumentBuilder()
