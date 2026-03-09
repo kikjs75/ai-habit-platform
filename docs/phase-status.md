@@ -10,7 +10,7 @@
 | 2 | AI Service (OCR) | ✅ 완료 | `test_phase1.py` | — |
 | 3 | LLM Processing | ✅ 완료 | `test_phase1.py` | — |
 | 4 | External Integration | ✅ 완료 | — | — |
-| 5 | Elasticsearch | ⏳ 진행 예정 | `test_phase5.py` | — |
+| 5 | Elasticsearch | ✅ 완료 | `test_phase5.py` | 2026-03-09 |
 | 6 | Filebeat | ⏳ | `test_phase6.py` | — |
 | 7 | Logstash | ⏳ | `test_phase7.py` | — |
 | 8 | Kibana | ⏳ | `test_phase8.py` | — |
@@ -30,19 +30,19 @@
 
 ---
 
-### Phase 5 — Elasticsearch ⏳
+### Phase 5 — Elasticsearch ✅
 
 완료 조건:
-- [ ] Elasticsearch 컨테이너 정상 구동
-- [ ] `_cluster/health` status: yellow 이상
-- [ ] 포트 9200 접근 가능
+- [x] Elasticsearch 컨테이너 정상 구동
+- [x] `_cluster/health` status: yellow 이상
+- [x] 포트 9200 접근 가능
 
 검증 실행:
 ```bash
 ./scripts/verify/run.sh 5
 ```
 
-검증 결과: _(미완료)_
+검증 결과: 2026-03-09 — 4 passed, 0 failed
 
 ---
 
