@@ -106,6 +106,24 @@ services:
     networks:
       - appnet
 
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.13.0
+    container_name: ai-habit-logstash
+    environment:
+      - TZ=Asia/Seoul
+      - LS_JAVA_OPTS=-Xms256m -Xmx256m
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    volumes:
+      - ./apps/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./apps/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - appnet
+
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.13.0
     container_name: ai-habit-filebeat
@@ -119,6 +137,8 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
+      logstash:
+        condition: service_started
     networks:
       - appnet
 
