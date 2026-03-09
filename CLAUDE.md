@@ -66,6 +66,7 @@ Rules:
 2. A phase is not complete until all tests in `./scripts/verify/run.sh N` pass.
 3. Do not proceed to the next phase until the current phase verification passes.
 4. After verification passes, update `docs/phase-status.md` to mark the phase complete with the date.
+5. After verification passes, update the `## Development Progress` table in `README.md` to reflect the latest status.
 
 Verification coverage checklist (apply to every phase):
 

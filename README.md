@@ -300,9 +300,9 @@ docker exec ai-habit-mongo mongosh \
 | 2 | AI Service — FastAPI + Tesseract OCR | ✅ Done |
 | 3 | LLM Processing — structured data extraction | ✅ Done |
 | 4 | External Integration — Google Calendar + FCM | ✅ Done |
-| 5 | Elasticsearch — log storage | ⏳ Next |
-| 6 | Filebeat — log collection | ⏳ |
-| 7 | Logstash — log parsing pipeline | ⏳ |
+| 5 | Elasticsearch — log storage | ✅ Done |
+| 6 | Filebeat — log collection | ✅ Done |
+| 7 | Logstash — log parsing pipeline | ⏳ Next |
 | 8 | Kibana — dashboard & visualization | ⏳ |
 
 ### Phase 4 구현 내용
