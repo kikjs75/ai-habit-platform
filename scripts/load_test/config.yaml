@@ -9,8 +9,15 @@ api:
 load:
   mode: "sequential"           # sequential: 응답 받은 후 다음 요청
                                # concurrent: TPS 기반 동시 요청 (OCR only 권장)
-  max_requests: 20             # 총 요청 수 (sequential 모드)
-  delay_sec: 2                 # 요청 간 대기 시간 (응답 후, 초)
+
+  # sequential 종료 조건 (둘 중 하나만 사용, duration_sec 우선)
+  max_requests: 20             # 건수 기준 종료
+  # duration_sec: 300          # 시간 기준 종료 (초) — 주석 해제 시 max_requests 대신 사용
+
+  # 요청 간 대기 시간 (delay_min/max 둘 다 설정 시 랜덤, 아니면 delay_sec 고정)
+  delay_sec: 2                 # 고정 대기 시간 (초)
+  # delay_min: 1               # 랜덤 대기 최솟값 (초)
+  # delay_max: 10              # 랜덤 대기 최댓값 (초)
 
   # concurrent 모드 전용
   tps: 0.03                    # 초당 요청 수 (LLM 한계: ~0.033)

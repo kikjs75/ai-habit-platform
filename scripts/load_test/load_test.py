@@ -222,32 +222,67 @@ def print_stats(stats: dict, elapsed: float):
 
 # ─── Sequential 모드 ─────────────────────────────────────────────────────────
 
+def _next_delay(load_cfg: dict) -> float:
+    """요청 간 대기 시간 결정: delay_min/max 둘 다 있으면 랜덤, 아니면 delay_sec 고정."""
+    d_min = load_cfg.get("delay_min")
+    d_max = load_cfg.get("delay_max")
+    if d_min is not None and d_max is not None:
+        return random.uniform(d_min, d_max)
+    return load_cfg.get("delay_sec", 2)
+
+
 def run_sequential(cfg: dict):
-    max_requests = cfg["load"]["max_requests"]
-    delay_sec = cfg["load"]["delay_sec"]
+    load_cfg = cfg["load"]
+    duration_sec = load_cfg.get("duration_sec")          # 시간 기준 종료 (우선)
+    max_requests = load_cfg.get("max_requests", 20)       # 건수 기준 종료 (기본)
     output_dir = Path(cfg["images"]["output_dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # 대기 방식 판단
+    d_min = load_cfg.get("delay_min")
+    d_max = load_cfg.get("delay_max")
+    if d_min is not None and d_max is not None:
+        delay_desc = f"랜덤 {d_min}~{d_max}s"
+    else:
+        delay_desc = f"고정 {load_cfg.get('delay_sec', 2)}s"
+
+    # 종료 조건 판단
+    stop_desc = f"{duration_sec}s 동안" if duration_sec else f"{max_requests}건"
+
     logger.info("=" * 55)
     logger.info("모드: Sequential (응답 후 다음 요청)")
-    logger.info(f"총 요청 수: {max_requests}건  요청 간 대기: {delay_sec}s")
+    logger.info(f"종료 조건: {stop_desc}  요청 간 대기: {delay_desc}")
     logger.info(f"Target: {cfg['api']['base_url']}{cfg['api']['endpoint']}")
     logger.info("=" * 55)
 
     results = []
     start_time = time.monotonic()
+    i = 0
 
-    for i in range(1, max_requests + 1):
+    while True:
+        i += 1
+        elapsed = time.monotonic() - start_time
+
+        # 종료 조건 확인
+        if duration_sec is not None:
+            if elapsed >= duration_sec:
+                break
+            label = f"[{i}  경과{round(elapsed)}s/{duration_sec}s]"
+        else:
+            if i > max_requests:
+                break
+            label = f"[{i}/{max_requests}]"
+
         # 이미지 생성
         try:
             image_path = generate_image(
                 output_dir, cfg["images"]["width"], cfg["images"]["height"])
         except Exception as e:
-            logger.error(f"[{i}/{max_requests}] 이미지 생성 실패: {e}")
+            logger.error(f"{label} 이미지 생성 실패: {e}")
             continue
 
         # 요청 전송
-        logger.info(f"[{i}/{max_requests}] 요청 시작...")
+        logger.info(f"{label} 요청 시작...")
         result = send_request(cfg, image_path)
         results.append(result)
         elapsed = time.monotonic() - start_time
@@ -255,7 +290,7 @@ def run_sequential(cfg: dict):
         # 즉시 결과 로그
         status_str = f"HTTP {result['status']}" if result["success"] else f"FAIL({result['error']})"
         logger.info(
-            f"[{i}/{max_requests}] {status_str}  "
+            f"{label} {status_str}  "
             f"duration={result['duration_ms']}ms  "
             f"경과={round(elapsed)}s"
         )
@@ -265,10 +300,16 @@ def run_sequential(cfg: dict):
             s = calc_stats(results)
             print_stats(s, elapsed)
 
-        # 마지막 요청이 아니면 대기
-        if i < max_requests and delay_sec > 0:
-            logger.info(f"  → {delay_sec}s 대기 후 다음 요청...")
-            time.sleep(delay_sec)
+        # 다음 요청 전 대기 (종료 직전이면 스킵)
+        delay = _next_delay(load_cfg)
+        if duration_sec is not None:
+            remaining = duration_sec - (time.monotonic() - start_time)
+            if remaining <= 0:
+                break
+            delay = min(delay, remaining)
+        if delay > 0:
+            logger.info(f"  → {round(delay, 1)}s 대기 후 다음 요청...")
+            time.sleep(delay)
 
     return results, time.monotonic() - start_time
 
@@ -407,9 +448,15 @@ def main():
     parser.add_argument("--mode", choices=["sequential", "concurrent"],
                         help="실행 모드 오버라이드")
     parser.add_argument("--requests", type=int, dest="max_requests",
-                        help="총 요청 수 (sequential)")
+                        help="총 요청 수 (sequential 건수 기준)")
+    parser.add_argument("--duration-sec", type=int, dest="duration_sec",
+                        help="실행 시간 초 (sequential 시간 기준, --requests 대신 사용)")
     parser.add_argument("--delay", type=float,
-                        help="요청 간 대기 시간 초 (sequential)")
+                        help="고정 대기 시간 초 (sequential)")
+    parser.add_argument("--delay-min", type=float, dest="delay_min",
+                        help="랜덤 대기 최솟값 초 (sequential)")
+    parser.add_argument("--delay-max", type=float, dest="delay_max",
+                        help="랜덤 대기 최댓값 초 (sequential)")
     parser.add_argument("--tps", type=float, help="TPS (concurrent)")
     parser.add_argument("--duration", type=int, help="실행 시간 초 (concurrent)")
     parser.add_argument("--no-delete", action="store_true",
@@ -428,8 +475,14 @@ def main():
         cfg["load"]["mode"] = args.mode
     if args.max_requests:
         cfg["load"]["max_requests"] = args.max_requests
+    if args.duration_sec:
+        cfg["load"]["duration_sec"] = args.duration_sec
     if args.delay is not None:
         cfg["load"]["delay_sec"] = args.delay
+    if args.delay_min is not None:
+        cfg["load"]["delay_min"] = args.delay_min
+    if args.delay_max is not None:
+        cfg["load"]["delay_max"] = args.delay_max
     if args.tps:
         cfg["load"]["tps"] = args.tps
     if args.duration:

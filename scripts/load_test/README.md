@@ -12,18 +12,28 @@ pip3 install pyyaml Pillow requests
 
 응답을 받은 후 다음 요청을 전송합니다. 큐 누적 없이 안정적으로 테스트할 수 있습니다.
 
+**종료 조건**: 건수(`--requests`) 또는 시간(`--duration-sec`) 중 하나 선택 (시간 우선)
+
+**대기 시간**: 고정(`--delay`) 또는 랜덤 범위(`--delay-min` / `--delay-max`) 선택
+
 ```bash
-# 기본 실행 (config.yaml 기준, sequential 20건)
+# 기본 실행 (config.yaml 기준, sequential 20건 / 고정 2s 대기)
 python3 scripts/load_test/load_test.py
 
-# 요청 수 / 대기 시간 오버라이드
+# 건수 기준 + 고정 대기
 python3 scripts/load_test/load_test.py --requests 10 --delay 5
+
+# 시간 기준 (300초 동안) + 랜덤 대기 (1~10초)
+python3 scripts/load_test/load_test.py --duration-sec 300 --delay-min 1 --delay-max 10
+
+# 시간 기준 + 고정 대기
+python3 scripts/load_test/load_test.py --duration-sec 600 --delay 30
 
 # 이미지 삭제 안 하고 확인
 python3 scripts/load_test/load_test.py --requests 3 --no-delete
 
 # 백그라운드 실행
-nohup python3 scripts/load_test/load_test.py > /dev/null 2>&1 &
+nohup python3 scripts/load_test/load_test.py --duration-sec 3600 --delay-min 5 --delay-max 30 > /dev/null 2>&1 &
 ```
 
 ### Concurrent 모드 (OCR only 권장)
@@ -43,8 +53,11 @@ python3 scripts/load_test/load_test.py --mode concurrent --tps 1 --duration 60
 | 옵션 | 설명 |
 |------|------|
 | `--mode sequential\|concurrent` | 실행 모드 (config.yaml 오버라이드) |
-| `--requests N` | 총 요청 수 (sequential) |
-| `--delay N` | 요청 간 대기 시간 초 (sequential) |
+| `--requests N` | 총 요청 수 — 건수 기준 종료 (sequential) |
+| `--duration-sec N` | 실행 시간 초 — 시간 기준 종료, `--requests` 보다 우선 (sequential) |
+| `--delay N` | 고정 대기 시간 초 (sequential) |
+| `--delay-min N` | 랜덤 대기 최솟값 초 (sequential, `--delay-max`와 함께 사용) |
+| `--delay-max N` | 랜덤 대기 최댓값 초 (sequential, `--delay-min`와 함께 사용) |
 | `--tps N` | 초당 요청 수 (concurrent) |
 | `--duration N` | 실행 시간 초 (concurrent) |
 | `--no-delete` | 전송 후 이미지 삭제 안 함 |
@@ -55,8 +68,11 @@ python3 scripts/load_test/load_test.py --mode concurrent --tps 1 --duration 60
 | 항목 | 설명 | 기본값 |
 |------|------|--------|
 | `load.mode` | 실행 모드 (`sequential` / `concurrent`) | `sequential` |
-| `load.max_requests` | 총 요청 수 (sequential) | `20` |
-| `load.delay_sec` | 요청 간 대기 시간 초 (sequential) | `2` |
+| `load.max_requests` | 총 요청 수 — 건수 기준 종료 (sequential) | `20` |
+| `load.duration_sec` | 실행 시간 초 — 시간 기준 종료, 설정 시 max_requests 무시 (sequential) | 미설정 |
+| `load.delay_sec` | 고정 대기 시간 초 (sequential) | `2` |
+| `load.delay_min` | 랜덤 대기 최솟값 초 (sequential, delay_max와 함께 설정) | 미설정 |
+| `load.delay_max` | 랜덤 대기 최댓값 초 (sequential, delay_min와 함께 설정) | 미설정 |
 | `load.tps` | 초당 요청 수 (concurrent) | `0.03` |
 | `load.duration` | 테스트 실행 시간 초 (concurrent) | `300` |
 | `load.max_workers` | 최대 동시 스레드 수 (concurrent) | `4` |
@@ -79,6 +95,68 @@ python3 scripts/load_test/load_test.py --mode concurrent --tps 1 --duration 60
 | 자정(00:00) 도달 | 날짜별 로테이션 |
 
 로테이션된 파일은 날짜 접미사로 보관됩니다 (`load_test.log.2026-03-09`), 최대 30일 보관.
+
+---
+
+## 신규 기능 테스트 방법 (시간 기준 + 랜덤 대기)
+
+### 테스트 시나리오
+
+#### 1. 시간 기준 + 랜덤 대기 (핵심)
+
+```bash
+# 60초 동안, 요청 간 1~5초 랜덤 대기 (이미지 삭제 안 함)
+python3 scripts/load_test/load_test.py --duration-sec 60 --delay-min 1 --delay-max 5 --no-delete
+```
+
+#### 2. 시간 기준 + 고정 대기
+
+```bash
+python3 scripts/load_test/load_test.py --duration-sec 30 --delay 5 --no-delete
+```
+
+#### 3. 건수 기준 + 랜덤 대기
+
+```bash
+python3 scripts/load_test/load_test.py --requests 3 --delay-min 2 --delay-max 8 --no-delete
+```
+
+### 확인 포인트
+
+**로그 출력 확인**
+
+| 항목 | 기대 출력 예시 |
+|------|--------------|
+| 시작 헤더 | `종료 조건: 60s 동안  요청 간 대기: 랜덤 1~5s` |
+| 시간 기준 레이블 | `[1  경과3s/60s] 요청 시작...` |
+| 랜덤 대기 | `→ 3.7s 대기 후 다음 요청...` (매번 다른 값) |
+| 고정 대기 | `→ 5.0s 대기 후 다음 요청...` (매번 동일) |
+| 건수 기준 레이블 | `[1/3] 요청 시작...` |
+
+**결과 파일 확인**
+
+```bash
+# 테스트 완료 후 reports 디렉토리에 생성 여부
+ls -lh scripts/load_test/reports/
+
+# 내용 확인 (mode, config 포함 여부)
+cat $(ls -t scripts/load_test/reports/*.json | head -1) | python3 -m json.tool
+```
+
+**로그 파일 확인**
+
+```bash
+# 고정명 단일 파일로 누적되는지 확인 (타임스탬프 없어야 함)
+ls scripts/load_test/logs/
+# 기대: load_test.log 하나만 존재
+
+# 이번 실행 로그와 이전 실행 로그가 같은 파일에 쌓이는지
+grep "모드: Sequential" scripts/load_test/logs/load_test.log | wc -l
+# 기대: 실행 횟수만큼 증가
+```
+
+> LLM 응답이 ~28초이므로 `--duration-sec 60`으로는 **1~2건**만 처리됩니다.
+> 더 많은 건수를 보려면 `--duration-sec 300` 이상으로 설정하세요.
 
 ---
 
@@ -133,15 +211,10 @@ sequential 모드에서는 **첫 1~2건을 제외하고 통계를 해석**하거
 
 ## 로그 확인 (grep 예제)
 
-> 로그 파일 이름은 실행마다 다릅니다. 최신 파일을 먼저 확인하세요:
-> ```bash
-> ls -t scripts/load_test/logs/ | head -1
-> ```
-
-이하 예제에서 `LOG=scripts/load_test/logs/load_test_*.log` 형태로 파일을 지정하거나, 최신 파일을 변수로 사용하세요:
+로그는 고정명 `load_test.log`에 누적됩니다. 이하 예제에서 `LOG` 변수를 먼저 설정하세요:
 
 ```bash
-LOG=$(ls -t scripts/load_test/logs/load_test_*.log | head -1)
+LOG=scripts/load_test/logs/load_test.log
 ```
 
 ### 기본 모니터링
@@ -267,14 +340,14 @@ grep "\[.*\/.*\] HTTP" $LOG \
 ## 로그 파일 관리
 
 ```bash
-# 로그 디렉토리 확인
+# 로그 디렉토리 확인 (load_test.log 고정명 + 로테이션 파일)
 ls -lh scripts/load_test/logs/
 
-# 최신 로그 파일 확인
-ls -t scripts/load_test/logs/ | head -5
+# 로테이션된 날짜별 파일 목록
+ls scripts/load_test/logs/load_test.log.*
 
-# 이전 실행 결과 비교
-grep "최종 결과" -A 10 scripts/load_test/logs/load_test_20260309_151045.log
+# 이전 날짜 로그에서 결과 비교
+grep "최종 결과" -A 10 scripts/load_test/logs/load_test.log.2026-03-09
 ```
 
 ## 결과 파일 (scripts/load_test/reports/)
