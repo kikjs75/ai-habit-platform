@@ -97,8 +97,14 @@ pip install Pillow
 python create_sample.py
 # -> creates sample.png with nutrition label text
 
+# not exist image
 curl -X POST http://localhost:3000/records/ocr \
   -F "image=@apps/ai/samples/sample.png"
+
+# exist image
+curl -X POST http://localhost:3000/records/ocr \
+  -F "image=@shared/sample.png"
+
 ```
 
 ### 5. Swagger UI

@@ -2,6 +2,7 @@ import io
 import json
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone, timedelta
 
@@ -91,9 +92,11 @@ async def ocr(file: UploadFile = File(...)):
     try:
         contents = await file.read()
         image = Image.open(io.BytesIO(contents))
+        t0 = time.monotonic()
         text = pytesseract.image_to_string(image)
+        duration_ms = int((time.monotonic() - t0) * 1000)
         text = text.strip()
-        logger.info("OCR completed, extracted %d chars", len(text))
+        logger.info("OCR completed", extra={"chars": len(text), "duration_ms": duration_ms})
         return {"text": text, "engine": "tesseract"}
     except Exception as e:
         logger.error("OCR failed: %s", e)
@@ -127,6 +130,7 @@ async def llm_structure(body: LlmRequest):
         )
         inputs = tokenizer(text_input, return_tensors="pt")
 
+        t0 = time.monotonic()
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
@@ -134,10 +138,11 @@ async def llm_structure(body: LlmRequest):
                 do_sample=False,
                 pad_token_id=tokenizer.eos_token_id,
             )
+        duration_ms = int((time.monotonic() - t0) * 1000)
 
         generated = outputs[0][inputs.input_ids.shape[1]:]
         response_text = tokenizer.decode(generated, skip_special_tokens=True).strip()
-        logger.info("LLM raw response: %s", response_text)
+        logger.info("LLM inference completed", extra={"duration_ms": duration_ms, "response": response_text})
 
         start = response_text.find("{")
         end = response_text.rfind("}") + 1
