@@ -3,12 +3,14 @@ import json
 import logging
 import os
 import time
+import uuid
 from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone, timedelta
 
 import pytesseract
 import torch
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 from pydantic import BaseModel
@@ -16,6 +18,9 @@ from pythonjsonlogger import jsonlogger
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 KST = timezone(timedelta(hours=9))
+
+_trace_id: ContextVar[str] = ContextVar('trace_id', default='')
+_user_id: ContextVar[str] = ContextVar('user_id', default='anonymous')
 
 _STDLIB_ATTRS = frozenset({
     "args", "asctime", "created", "exc_info", "exc_text", "filename",
@@ -82,6 +87,13 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def trace_middleware(request: Request, call_next):
+    _trace_id.set(request.headers.get("x-trace-id", ""))
+    _user_id.set(request.headers.get("x-user-id", "anonymous"))
+    return await call_next(request)
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
@@ -89,6 +101,7 @@ async def health():
 
 @app.post("/ocr")
 async def ocr(file: UploadFile = File(...)):
+    span_id = str(uuid.uuid4())
     try:
         contents = await file.read()
         image = Image.open(io.BytesIO(contents))
@@ -96,10 +109,20 @@ async def ocr(file: UploadFile = File(...)):
         text = pytesseract.image_to_string(image)
         duration_ms = int((time.monotonic() - t0) * 1000)
         text = text.strip()
-        logger.info("OCR completed", extra={"chars": len(text), "duration_ms": duration_ms})
+        logger.info("OCR completed", extra={
+            "trace_id": _trace_id.get(),
+            "span_id": span_id,
+            "user_id": _user_id.get(),
+            "chars": len(text),
+            "duration_ms": duration_ms,
+        })
         return {"text": text, "engine": "tesseract"}
     except Exception as e:
-        logger.error("OCR failed: %s", e)
+        logger.error("OCR failed: %s", e, extra={
+            "trace_id": _trace_id.get(),
+            "span_id": span_id,
+            "user_id": _user_id.get(),
+        })
         raise HTTPException(status_code=500, detail=f"OCR processing failed: {str(e)}")
 
 
@@ -109,6 +132,7 @@ class LlmRequest(BaseModel):
 
 @app.post("/llm")
 async def llm_structure(body: LlmRequest):
+    span_id = str(uuid.uuid4())
     if model is None or tokenizer is None:
         raise HTTPException(status_code=503, detail="LLM model not loaded yet")
     try:
@@ -142,7 +166,13 @@ async def llm_structure(body: LlmRequest):
 
         generated = outputs[0][inputs.input_ids.shape[1]:]
         response_text = tokenizer.decode(generated, skip_special_tokens=True).strip()
-        logger.info("LLM inference completed", extra={"duration_ms": duration_ms, "response": response_text})
+        logger.info("LLM inference completed", extra={
+            "trace_id": _trace_id.get(),
+            "span_id": span_id,
+            "user_id": _user_id.get(),
+            "duration_ms": duration_ms,
+            "response": response_text,
+        })
 
         start = response_text.find("{")
         end = response_text.rfind("}") + 1
@@ -156,5 +186,9 @@ async def llm_structure(body: LlmRequest):
             "protein": result.get("protein"),
         }
     except Exception as e:
-        logger.error("LLM processing failed: %s", e)
+        logger.error("LLM processing failed: %s", e, extra={
+            "trace_id": _trace_id.get(),
+            "span_id": span_id,
+            "user_id": _user_id.get(),
+        })
         raise HTTPException(status_code=500, detail=f"LLM processing failed: {str(e)}")
