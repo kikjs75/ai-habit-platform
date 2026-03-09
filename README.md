@@ -302,8 +302,8 @@ docker exec ai-habit-mongo mongosh \
 | 4 | External Integration — Google Calendar + FCM | ✅ Done |
 | 5 | Elasticsearch — log storage | ✅ Done |
 | 6 | Filebeat — log collection | ✅ Done |
-| 7 | Logstash — log parsing pipeline | ⏳ Next |
-| 8 | Kibana — dashboard & visualization | ⏳ |
+| 7 | Logstash — log parsing pipeline | ✅ Done |
+| 8 | Kibana — dashboard & visualization | ✅ Done |
 
 ### Phase 4 구현 내용
 

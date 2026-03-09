@@ -25,6 +25,7 @@ REQUIRED_SERVICES=(
   "ai-habit-elasticsearch"
   "ai-habit-logstash"
   "ai-habit-filebeat"
+  "ai-habit-kibana"
 )
 
 FAILED=0
