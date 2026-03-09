@@ -56,7 +56,25 @@ Development principles
 - API documentation
 - maintainable code
 
-Claude should implement the project **phase by phase**.
+Testing and verification
+
+Claude must follow a TDD-based verification process for every phase.
+
+Rules:
+
+1. Write or update the verification script in `scripts/verify/test_phaseN.py` alongside the implementation — not after.
+2. A phase is not complete until all tests in `./scripts/verify/run.sh N` pass.
+3. Do not proceed to the next phase until the current phase verification passes.
+4. After verification passes, update `docs/phase-status.md` to mark the phase complete with the date.
+
+Verification scripts:
+
+- Location: `scripts/verify/`
+- Runner: `./scripts/verify/run.sh [phase]`
+- Dependencies: `pip install -r scripts/verify/requirements.txt`
+- Reference: `docs/phase-verification-template.md`
+
+Claude should implement the project **phase by phase**, and each phase must pass verification before the next begins.
 
 Memory management
 
