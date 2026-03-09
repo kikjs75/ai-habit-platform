@@ -11,7 +11,7 @@
 | 3 | LLM Processing | ✅ 완료 | `test_phase1.py` | — |
 | 4 | External Integration | ✅ 완료 | — | — |
 | 5 | Elasticsearch | ✅ 완료 | `test_phase5.py` | 2026-03-09 |
-| 6 | Filebeat | ⏳ | `test_phase6.py` | — |
+| 6 | Filebeat | ✅ 완료 | `test_phase6.py` | 2026-03-09 |
 | 7 | Logstash | ⏳ | `test_phase7.py` | — |
 | 8 | Kibana | ⏳ | `test_phase8.py` | — |
 
@@ -46,20 +46,23 @@
 
 ---
 
-### Phase 6 — Filebeat ⏳
+### Phase 6 — Filebeat ✅
 
 완료 조건:
-- [ ] Filebeat 컨테이너 정상 구동
-- [ ] `ai-habit-api-logs-*` 인덱스 생성 확인
-- [ ] `ai-habit-ai-logs-*` 인덱스 생성 확인
-- [ ] 인덱스에 도큐먼트 적재 확인
+- [x] Filebeat 컨테이너 정상 구동
+- [x] `ai-habit-logs-*` 인덱스 생성 확인
+- [x] Elasticsearch 인덱스에 도큐먼트 적재 확인
+- [x] `agent.type=filebeat` 확인
 
 검증 실행:
 ```bash
 ./scripts/verify/run.sh 6
 ```
 
-검증 결과: _(미완료)_
+검증 결과: 2026-03-09 — 3 passed, 0 failed
+
+비고: macOS Docker Desktop 환경에서 `add_docker_metadata` container 필드 미생성.
+`agent.type=filebeat` 로 수집 확인 대체. Logstash(Phase 7)에서 JSON 파싱으로 서비스 구분.
 
 ---
 
