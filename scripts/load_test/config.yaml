@@ -25,9 +25,9 @@ images:
   height: 320
 
 report:
-  output_file: "load_test_result.json"
+  output_dir: "scripts/load_test/reports"
 
 log:
   file: "scripts/load_test/logs/load_test.log"
   level: "INFO"
-  rotate_mb: 10
+  rotate_mb: 100                # 100MB 초과 시 즉시 로테이션 (+ 자정 일별 로테이션)

@@ -33,30 +33,48 @@ logger = logging.getLogger("load_test")
 
 # ─── 로깅 설정 ───────────────────────────────────────────────────────────────
 
+class _SizedTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
+    """일별 로테이션 + 100MB 크기 초과 시 즉시 로테이션."""
+
+    def __init__(self, filename, max_bytes=0, **kwargs):
+        super().__init__(filename, **kwargs)
+        self.max_bytes = max_bytes
+
+    def shouldRollover(self, record) -> bool:
+        if self.max_bytes > 0 and self.stream:
+            self.stream.seek(0, 2)
+            if self.stream.tell() >= self.max_bytes:
+                return 1
+        return super().shouldRollover(record)
+
+
 def setup_logging(log_cfg: dict) -> None:
-    base = log_cfg.get("file", "scripts/load_test/logs/load_test.log")
-    p = Path(base)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = str(p.parent / f"{p.stem}_{ts}{p.suffix}")
+    log_file = log_cfg.get("file", "scripts/load_test/logs/load_test.log")
+    p = Path(log_file)
     p.parent.mkdir(parents=True, exist_ok=True)
 
     fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s",
                             datefmt="%Y-%m-%d %H:%M:%S")
     level = getattr(logging, log_cfg.get("level", "INFO").upper(), logging.INFO)
-    rotate_mb = log_cfg.get("rotate_mb", 10)
+    rotate_mb = log_cfg.get("rotate_mb", 100)
 
     logger.setLevel(level)
     ch = logging.StreamHandler(sys.stdout)
     ch.setFormatter(fmt)
     logger.addHandler(ch)
 
-    fh = logging.handlers.RotatingFileHandler(
-        log_file, maxBytes=rotate_mb * 1024 * 1024,
-        backupCount=3, encoding="utf-8")
+    fh = _SizedTimedRotatingFileHandler(
+        log_file,
+        max_bytes=rotate_mb * 1024 * 1024,
+        when="midnight",
+        interval=1,
+        backupCount=30,
+        encoding="utf-8",
+    )
     fh.setFormatter(fmt)
     logger.addHandler(fh)
 
-    logger.info(f"로그 파일: {Path(log_file).resolve()}")
+    logger.info(f"로그 파일: {p.resolve()}")
 
 
 # ─── 샘플 데이터 풀 ──────────────────────────────────────────────────────────
@@ -359,7 +377,11 @@ def print_final_report(results: list, elapsed: float, cfg: dict):
         logger.warning(f"에러 유형   : {s['errors']}")
     logger.info("=" * 55)
 
-    output_file = cfg["report"]["output_file"]
+    reports_dir = Path(cfg["report"].get("output_dir", "scripts/load_test/reports"))
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_file = reports_dir / f"load_test_result_{ts}.json"
+
     s["actual_tps"] = actual_tps
     s["elapsed"] = round(elapsed)
     s["config"] = {
@@ -369,7 +391,7 @@ def print_final_report(results: list, elapsed: float, cfg: dict):
     s["timestamp"] = datetime.now().isoformat()
     with open(output_file, "w") as f:
         json.dump(s, f, indent=2, ensure_ascii=False)
-    logger.info(f"결과 저장: {Path(output_file).resolve()}")
+    logger.info(f"결과 저장: {output_file.resolve()}")
 
 
 # ─── 설정 로드 + Main ────────────────────────────────────────────────────────
