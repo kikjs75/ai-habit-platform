@@ -1,5 +1,11 @@
 # Load Test 가이드
 
+## 사전 준비
+
+```bash
+pip3 install pyyaml Pillow requests
+```
+
 ## 실행 방법
 
 ```bash
