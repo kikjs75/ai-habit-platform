@@ -7,28 +7,27 @@ api:
   timeout: 120                 # 요청 타임아웃 (초)
 
 load:
-  tps: 0.03                    # 초당 요청 수 (Transactions Per Second)
-                               # ※ LLM 처리량 한계: 1건 ÷ 30s = 0.033 TPS
-                               #   이 값을 초과하면 큐 누적 → 타임아웃 발생
-                               # LLM 포함 권장: 0.02~0.03
-                               # OCR only 권장: 0.5~2.0
-  duration: 300                # 테스트 총 실행 시간 (초)
-  warmup: 30                   # 워밍업 구간 (초) — 통계 집계 제외
-  max_workers: 1               # 최대 동시 요청 스레드 수
-                               # ※ LLM은 단일 스레드 처리 → 1 권장
-  max_pending: 2               # 최대 대기 중 요청 수 (초과 시 신규 요청 보류)
+  mode: "sequential"           # sequential: 응답 받은 후 다음 요청
+                               # concurrent: TPS 기반 동시 요청 (OCR only 권장)
+  max_requests: 20             # 총 요청 수 (sequential 모드)
+  delay_sec: 2                 # 요청 간 대기 시간 (응답 후, 초)
+
+  # concurrent 모드 전용
+  tps: 0.03                    # 초당 요청 수 (LLM 한계: ~0.033)
+  duration: 300                # 테스트 실행 시간 (초)
+  max_workers: 4               # 최대 동시 스레드 수
+  max_pending: 2               # 최대 대기 요청 수
 
 images:
-  output_dir: "apps/ai/samples/images"   # 생성 이미지 저장 경로
-  delete_after_send: true                # 요청 전송 후 이미지 삭제 여부
+  output_dir: "apps/ai/samples/images"
+  delete_after_send: true
   width: 420
   height: 320
 
 report:
-  print_interval: 30           # 중간 통계 출력 주기 (초)
-  output_file: "load_test_result.json"   # 결과 저장 파일
+  output_file: "load_test_result.json"
 
 log:
-  file: "scripts/load_test/logs/load_test.log"   # 실행마다 타임스탬프 파일 별도 생성
-  level: "INFO"                                  # DEBUG | INFO | WARNING | ERROR
-  rotate_mb: 10                                  # 로그 파일 최대 크기 (MB)
+  file: "scripts/load_test/logs/load_test.log"
+  level: "INFO"
+  rotate_mb: 10
