@@ -309,7 +309,7 @@ docker exec ai-habit-mongo mongosh \
 | 5 | Elasticsearch — log storage | ✅ Done |
 | 6 | Filebeat — log collection | ✅ Done |
 | 7 | Logstash — log parsing pipeline | ✅ Done |
-| 8 | Kibana — dashboard & visualization | ✅ Done |
+| 8 | Kibana — dashboard & visualization (4 dashboards) | ✅ Done |
 
 ### Phase 4 구현 내용
 
