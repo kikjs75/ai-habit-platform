@@ -67,12 +67,33 @@ Rules:
 3. Do not proceed to the next phase until the current phase verification passes.
 4. After verification passes, update `docs/phase-status.md` to mark the phase complete with the date.
 
+Verification coverage checklist (apply to every phase):
+
+- [ ] Service health check — each service responds on its port
+- [ ] Functional test — actual endpoints called with real input, not just health
+- [ ] Integration test — cross-service flow verified end-to-end (e.g. NestJS → FastAPI → DB)
+- [ ] Timing / retry — async pipelines (Filebeat, Logstash) polled with timeout, not assumed instant
+- [ ] Compose readiness — all required containers running/healthy before tests run
+
 Verification scripts:
 
 - Location: `scripts/verify/`
 - Runner: `./scripts/verify/run.sh [phase]`
+- Compose check: `./scripts/verify/check_compose.sh`
+- Full run with LLM: `./scripts/verify/run.sh --all`
 - Dependencies: `pip3 install -r scripts/verify/requirements.txt`
 - Reference: `docs/phase-verification-template.md`
+
+Test file responsibilities:
+
+- `test_phase1.py` — NestJS /health, FastAPI /health, Swagger
+- `test_phase2.py` — FastAPI OCR: real image upload, text extraction
+- `test_phase3.py` — Integration: POST /records/ocr → OCR → LLM → DB (slow, ~120s)
+- `test_phase4.py` — Phase 4 endpoints registered: /auth/google, /calendar/events, /notifications/send
+- `test_phase5.py` — Elasticsearch cluster health
+- `test_phase6.py` — Filebeat → ES ingestion with retry (60s timeout)
+- `test_phase7.py` — Logstash JSON field structure with retry (60s timeout)
+- `test_phase8.py` — Kibana status and Data Views
 
 Claude should implement the project **phase by phase**, and each phase must pass verification before the next begins.
 
