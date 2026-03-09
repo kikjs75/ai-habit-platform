@@ -15,6 +15,7 @@ python3 scripts/load_test/load_test.py
 # 설정 오버라이드
 python3 scripts/load_test/load_test.py --tps 2 --duration 30
 python3 scripts/load_test/load_test.py --tps 0.5 --duration 120 --warmup 10
+python3 scripts/load_test/load_test.py --tps 0.1 --duration 120 --warmup 0 --no-delete
 
 # 이미지 삭제 안 하고 확인
 python3 scripts/load_test/load_test.py --tps 1 --duration 10 --no-delete
@@ -38,6 +39,28 @@ nohup python3 scripts/load_test/load_test.py --tps 1 --duration 60 > /dev/null 2
 | `log.file` | 로그 파일 경로 | `load_test.log` |
 | `log.level` | 로그 레벨 (DEBUG/INFO/WARNING/ERROR) | `INFO` |
 | `log.rotate_mb` | 로그 파일 최대 크기 (MB) | `10` |
+
+---
+
+## LLM 처리량 한계와 TPS 설정
+
+FastAPI의 LLM 엔드포인트는 **PyTorch 추론이 동기식**으로 실행되어 한 번에 1개 요청만 처리할 수 있습니다.
+
+```
+req1 (t=0s)  → LLM 30s → 완료 ✓
+req2 (t=10s) → LLM 대기 20s + 추론 30s = 50s → 완료 ✓
+req3 (t=20s) → LLM 대기 40s + 추론 30s = 70s → 완료 ✓
+req4 (t=30s) → LLM 대기 60s + 추론 30s = 90s → TIMEOUT ✗
+```
+
+**LLM 최대 처리량 = 1건 ÷ 30s = 0.033 TPS**
+
+TPS를 이 값보다 높게 설정하면 큐가 누적되어 타임아웃이 연쇄 발생합니다.
+
+| 시나리오 | 권장 TPS | max_workers | timeout |
+|---------|---------|-------------|---------|
+| LLM 포함 (기본) | 0.02~0.03 | 1 | 120s |
+| OCR only | 0.5~2.0 | 4 | 30s |
 
 ---
 
