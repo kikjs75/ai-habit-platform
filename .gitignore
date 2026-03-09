@@ -32,8 +32,7 @@ shared/
 # Load test
 apps/ai/samples/images/
 load_test_result.json
-load_test.log
-load_test.log.*
+scripts/load_test/logs/
 
 # Secrets
 *.pem

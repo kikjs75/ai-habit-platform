@@ -23,6 +23,6 @@ report:
   output_file: "load_test_result.json"   # 결과 저장 파일
 
 log:
-  file: "load_test.log"        # 로그 파일 경로
-  level: "INFO"                # DEBUG | INFO | WARNING | ERROR
-  rotate_mb: 10                # 로그 파일 최대 크기 (MB), 초과 시 rotate
+  file: "scripts/load_test/logs/load_test.log"   # 로그 파일 경로
+  level: "INFO"                                  # DEBUG | INFO | WARNING | ERROR
+  rotate_mb: 10                                  # 로그 파일 최대 크기 (MB), 초과 시 rotate

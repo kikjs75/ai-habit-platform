@@ -80,13 +80,13 @@ LLM 모델의 **첫 번째 추론이 특히 느리기** 때문입니다.
 
 ```bash
 # 실시간 전체 로그 추적
-tail -f load_test.log
+tail -f scripts/load_test/logs/load_test.log
 
 # 최근 50줄
-tail -50 load_test.log
+tail -50 scripts/load_test/logs/load_test.log
 
 # 특정 줄 수부터 실시간
-tail -n 0 -f load_test.log
+tail -n 0 -f scripts/load_test/logs/load_test.log
 ```
 
 ### 진행 상황
@@ -186,17 +186,17 @@ grep "\[진행" load_test.log \
 ## 로그 파일 관리
 
 ```bash
-# 현재 로그 파일 크기 확인
-ls -lh load_test.log*
+# 로그 디렉토리 확인
+ls -lh scripts/load_test/logs/
 
 # rotate된 파일 목록
-ls load_test.log*
+ls scripts/load_test/logs/
 
 # 이전 실행 결과 비교 (rotate 파일 포함)
-cat load_test.log.1 | grep "최종 결과" -A 10
+cat scripts/load_test/logs/load_test.log.1 | grep "최종 결과" -A 10
 
 # 로그 파일 초기화 (다음 실행 전)
-> load_test.log
+> scripts/load_test/logs/load_test.log
 ```
 
 ## 결과 파일 (load_test_result.json)

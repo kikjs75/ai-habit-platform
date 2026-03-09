@@ -36,7 +36,8 @@ logger = logging.getLogger("load_test")
 
 def setup_logging(log_cfg: dict) -> None:
     """콘솔 + 파일(rotating) 동시 출력"""
-    log_file = log_cfg.get("file", "load_test.log")
+    log_file = log_cfg.get("file", "scripts/load_test/logs/load_test.log")
+    Path(log_file).parent.mkdir(parents=True, exist_ok=True)
     level_str = log_cfg.get("level", "INFO").upper()
     rotate_mb = log_cfg.get("rotate_mb", 10)
     level = getattr(logging, level_str, logging.INFO)
@@ -254,7 +255,8 @@ def run(cfg: dict):
 
     stats.start_time = time.monotonic()
     end_time = stats.start_time + duration + warmup
-    next_print = stats.start_time + warmup + print_interval
+    # 워밍업 직후 첫 출력, 이후 print_interval 주기
+    next_print = stats.start_time + warmup + min(print_interval, duration)
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
@@ -306,11 +308,19 @@ def run(cfg: dict):
             if sleep_time > 0:
                 time.sleep(sleep_time)
 
-        # 남은 futures 수집
-        for f in futures:
-            result = f.result()
-            result["ts"] = getattr(f, "_ts", 0)
-            stats.add(result)
+        # 남은 futures 수집 (요청 타임아웃 내에서 대기)
+        if futures:
+            request_timeout = cfg["api"]["timeout"]
+            logger.info(f"진행 중인 요청 {len(futures)}개 완료 대기 (최대 {request_timeout}s)...")
+            for f in futures:
+                try:
+                    result = f.result(timeout=request_timeout)
+                    result["ts"] = getattr(f, "_ts", 0)
+                    stats.add(result)
+                except Exception:
+                    stats.add({"duration_ms": request_timeout * 1000,
+                               "status": 0, "error": "timeout", "success": False,
+                               "ts": getattr(f, "_ts", 0)})
 
     # ─── 최종 리포트 ──────────────────────────────────────────────────────────
     s = stats.summary(warmup)
