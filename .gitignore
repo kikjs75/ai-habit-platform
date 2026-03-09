@@ -29,6 +29,12 @@ Thumbs.db
 # Local test files
 shared/
 
+# Load test
+apps/ai/samples/images/
+load_test_result.json
+load_test.log
+load_test.log.*
+
 # Secrets
 *.pem
 *.key

@@ -1,0 +1,28 @@
+# AI Habit Platform — Load Test 설정
+
+api:
+  base_url: "http://localhost:3000"
+  endpoint: "/records/ocr"
+  user_id: "load-test"
+  timeout: 90                  # 요청 타임아웃 (초) — LLM 포함이라 여유 있게
+
+load:
+  tps: 1                       # 초당 요청 수 (Transactions Per Second)
+  duration: 60                 # 테스트 총 실행 시간 (초)
+  warmup: 5                    # 워밍업 구간 (초) — 통계 집계 제외
+  max_workers: 4               # 최대 동시 요청 스레드 수
+
+images:
+  output_dir: "apps/ai/samples/images"   # 생성 이미지 저장 경로
+  delete_after_send: true                # 요청 전송 후 이미지 삭제 여부
+  width: 420
+  height: 320
+
+report:
+  print_interval: 10           # 중간 통계 출력 주기 (초)
+  output_file: "load_test_result.json"   # 결과 저장 파일
+
+log:
+  file: "load_test.log"        # 로그 파일 경로
+  level: "INFO"                # DEBUG | INFO | WARNING | ERROR
+  rotate_mb: 10                # 로그 파일 최대 크기 (MB), 초과 시 rotate
