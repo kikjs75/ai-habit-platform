@@ -98,6 +98,21 @@ Test file responsibilities:
 
 Claude should implement the project **phase by phase**, and each phase must pass verification before the next begins.
 
+Documentation before commit
+
+Before every commit or commit & push, Claude must verify that all related documentation is up to date.
+
+Rules:
+
+1. Identify which docs are affected by the change (README.md, docs/*.md, scripts/*/README.md, etc.).
+2. Update every affected document to reflect the actual behavior — not the intended behavior.
+3. Documentation must be updated in the **same commit** as the code change, not in a follow-up commit.
+4. If a new feature, option, or behavior is added, the following must be present in the docs before committing:
+   - What it does (purpose)
+   - How to use it (CLI options, config fields, examples)
+   - How to verify it works (test steps and expected output)
+5. Do not commit with a placeholder like "TODO: update docs". Docs must be complete at commit time.
+
 Memory management
 
 After completing any meaningful work (new feature, bug fix, design decision, config change), always update `/home/node/.claude/projects/-workspace/memory/MEMORY.md` to reflect the latest state.
