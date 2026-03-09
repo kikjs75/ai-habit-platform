@@ -7,10 +7,13 @@ api:
   timeout: 90                  # 요청 타임아웃 (초) — LLM 포함이라 여유 있게
 
 load:
-  tps: 1                       # 초당 요청 수 (Transactions Per Second)
-  duration: 60                 # 테스트 총 실행 시간 (초)
+  tps: 0.1                     # 초당 요청 수 (Transactions Per Second)
+                               # LLM 포함 시 권장: 0.05~0.1 (1건당 25~30s 소요)
+                               # OCR only 시 권장: 0.5~2.0
+  duration: 120                # 테스트 총 실행 시간 (초)
   warmup: 5                    # 워밍업 구간 (초) — 통계 집계 제외
   max_workers: 4               # 최대 동시 요청 스레드 수
+  max_pending: 8               # 최대 대기 중 요청 수 (초과 시 신규 요청 보류)
 
 images:
   output_dir: "apps/ai/samples/images"   # 생성 이미지 저장 경로
@@ -23,6 +26,6 @@ report:
   output_file: "load_test_result.json"   # 결과 저장 파일
 
 log:
-  file: "scripts/load_test/logs/load_test.log"   # 로그 파일 경로
+  file: "scripts/load_test/logs/load_test.log"   # 로그 파일 경로 (실행마다 타임스탬프 파일 추가 생성)
   level: "INFO"                                  # DEBUG | INFO | WARNING | ERROR
   rotate_mb: 10                                  # 로그 파일 최대 크기 (MB), 초과 시 rotate

@@ -36,8 +36,12 @@ logger = logging.getLogger("load_test")
 
 def setup_logging(log_cfg: dict) -> None:
     """콘솔 + 파일(rotating) 동시 출력"""
-    log_file = log_cfg.get("file", "scripts/load_test/logs/load_test.log")
-    Path(log_file).parent.mkdir(parents=True, exist_ok=True)
+    base = log_cfg.get("file", "scripts/load_test/logs/load_test.log")
+    p = Path(base)
+    # 실행마다 타임스탬프 파일 별도 생성 (혼재 방지)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = str(p.parent / f"{p.stem}_{ts}{p.suffix}")
+    p.parent.mkdir(parents=True, exist_ok=True)
     level_str = log_cfg.get("level", "INFO").upper()
     rotate_mb = log_cfg.get("rotate_mb", 10)
     level = getattr(logging, level_str, logging.INFO)
@@ -242,6 +246,7 @@ def run(cfg: dict):
     img_width = cfg["images"]["width"]
     img_height = cfg["images"]["height"]
 
+    max_pending = cfg["load"].get("max_pending", max_workers * 2)
     stats = Stats()
     interval = 1.0 / tps  # 요청 간격 (초)
 
@@ -264,6 +269,13 @@ def run(cfg: dict):
         while time.monotonic() < end_time:
             loop_start = time.monotonic()
             ts = loop_start - stats.start_time  # 경과 시간
+
+            # 큐 포화 시 신규 요청 보류
+            pending = len([f for f in futures if not f.done()])
+            if pending >= max_pending:
+                logger.debug(f"대기 중 요청 {pending}개 — 신규 요청 보류")
+                time.sleep(0.5)
+                continue
 
             # 이미지 생성 및 요청 제출
             try:
