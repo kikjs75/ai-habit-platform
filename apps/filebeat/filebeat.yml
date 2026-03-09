@@ -1,0 +1,25 @@
+filebeat.inputs:
+  - type: container
+    paths:
+      - /var/lib/docker/containers/*/*.log
+
+processors:
+  - add_docker_metadata:
+      host: "unix:///var/run/docker.sock"
+
+# Phase 6 — Elasticsearch 직접 출력 (Logstash 없이 수집 확인용)
+# Phase 7에서 아래 output.elasticsearch를 주석 처리하고 output.logstash로 전환한다.
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  index: "ai-habit-logs-%{+yyyy.MM.dd}"
+
+# Phase 7 — Logstash 경유 출력 (Phase 7에서 활성화)
+# output.logstash:
+#   hosts: ["logstash:5044"]
+
+# ES 8.x: ILM/템플릿 자동 생성 비활성화 (커스텀 인덱스명 사용)
+setup.ilm.enabled: false
+setup.template.enabled: false
+
+logging.level: info
+logging.to_files: false

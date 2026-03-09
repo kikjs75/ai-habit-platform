@@ -23,6 +23,7 @@ REQUIRED_SERVICES=(
   "ai-habit-ai"
   "ai-habit-api"
   "ai-habit-elasticsearch"
+  "ai-habit-filebeat"
 )
 
 FAILED=0
