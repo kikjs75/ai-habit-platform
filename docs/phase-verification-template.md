@@ -8,7 +8,7 @@
 
 ```bash
 cd scripts/verify
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ### Phase별 실행
@@ -28,7 +28,7 @@ pip install -r requirements.txt
 
 ```bash
 cd scripts/verify
-pytest test_phase5.py -v
+python3 -m pytest test_phase5.py -v
 ```
 
 ---

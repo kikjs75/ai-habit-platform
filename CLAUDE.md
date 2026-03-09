@@ -71,7 +71,7 @@ Verification scripts:
 
 - Location: `scripts/verify/`
 - Runner: `./scripts/verify/run.sh [phase]`
-- Dependencies: `pip install -r scripts/verify/requirements.txt`
+- Dependencies: `pip3 install -r scripts/verify/requirements.txt`
 - Reference: `docs/phase-verification-template.md`
 
 Claude should implement the project **phase by phase**, and each phase must pass verification before the next begins.
