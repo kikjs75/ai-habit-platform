@@ -56,8 +56,8 @@ class TestFilebeatIngestion:
             assert count >= 1, f"No documents yet in {INDEX_PATTERN} (count={count})"
         _poll(check)
 
-    def test_document_has_container_metadata(self):
-        """도큐먼트에 container 메타데이터 포함 (Filebeat docker metadata)"""
+    def test_document_has_filebeat_agent(self):
+        """도큐먼트에 agent.type=filebeat 확인 (Filebeat 수집 증거)"""
         def check():
             res = requests.get(
                 f"{ES_URL}/{INDEX_PATTERN}/_search",
@@ -68,6 +68,7 @@ class TestFilebeatIngestion:
             hits = res.json().get("hits", {}).get("hits", [])
             assert len(hits) >= 1, "No documents yet"
             source = hits[0].get("_source", {})
-            assert "container" in source or "docker" in source, \
-                f"No container metadata in document: {list(source.keys())}"
+            agent_type = source.get("agent", {}).get("type", "")
+            assert agent_type == "filebeat", \
+                f"Expected agent.type=filebeat, got: '{agent_type}'"
         _poll(check)
